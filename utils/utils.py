@@ -54,26 +54,11 @@ def get_substring_index(full: str, substring:str) -> Tuple[int, int]:
 
 
 def fasta_to_dataframe(fasta_filename: Path, match: str = "") -> DataFrame:
-    # df: DataFrame = DataFrame(columns=["ID", "sequence"])
-
-
     with fasta_filename.open() as fasta:
         logger.info(f"read fasta file {fasta_filename}")
         d = [{"ID": seq_record.id,
-          "sequence": str(seq_record.seq)}
-            for seq_record in SeqIO.parse(fasta, 'fasta') if str(seq_record.id).startswith(match)]
-
-
-        #
-        # cnt = 0
-        # for seq_record in SeqIO.parse(fasta, 'fasta'):  # (generator)
-        #     if str(seq_record.id).startswith(match):
-        #         df.iloc[cnt] = [seq_record.id, str(seq_record.seq)]
-        #         # df = df.append(
-        #         #     pd.Series([seq_record.id, str(seq_record.seq)], index=df.columns), ignore_index=True)
-        #         cnt += 1
-        #         print(df)
-
+              "sequence": str(seq_record.seq)}
+             for seq_record in SeqIO.parse(fasta, 'fasta') if str(seq_record.id).startswith(match)]
 
     logger.info(f"read {len(d)} fasta sequences")
     return pd.DataFrame(d)
