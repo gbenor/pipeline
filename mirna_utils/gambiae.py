@@ -22,7 +22,7 @@ def read_aga_fasta():
     merge_df = pd.concat([mirbase_df, gambiae_mirna], ignore_index=True)
     merge_df.to_csv(MIRBASE_FILE)
     logger.info("update mirbase file")
-    logger.info(f"add {cnt} sequences")
+
 
 if __name__ == '__main__':
     read_aga_fasta()

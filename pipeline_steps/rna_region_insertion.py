@@ -1,15 +1,17 @@
 from pathlib import Path
 from typing import List
 
+
 import click
 import pandas as pd
 from pandas import DataFrame, Series
 
+from consts.biomart import BIOMART_DATA_PATH
 from consts.pipeline_steps import GAMBIAE_INFORMATION_COLUMN_NAMES, GAMBIAE_INFORMATION_DTYPE, \
     GAMBIAE_INFORMATION_FILENAME, \
     GAMBIAE_INFORMATION_USECOLS, REGION_PATH, SITE_PATH
 from utils.logger import logger
-from utils.utils import get_wrapper, read_csv
+from utils.utils import concatenate_biomart_df, get_wrapper, read_csv, to_csv
 
 
 def add_gambiae_region_information(fin: Path) -> DataFrame:
@@ -72,30 +74,12 @@ def find_gambiae_region(len_5utr: int, len_cds: int, len_3utr: int,
     return "+".join(result.index[result])
 
 
-def get_gambiae_region_from_row(row: Series) -> Series:
-    df["site"] = df.apply(func=get_wrapper(get_subsequence_by_coordinates,
-                                           "mRNA sequence", "chimera_start", "chimera_end",
-                                           extra_chars=SITE_EXTRA_CHARS),
-                          axis=1)
-
-    try:
-        return find_gambiae_region(transcript=str(row["seq"]),
-                                   len_5utr=int(row["LEN_5UTR"]),
-                                   len_cds=int(row["LEN_CDS"]),
-                                   len_3utr=int(row["LEN_3UTR"]),
-                                   chimera_start=int(row["chimera_start"])-1, #python is zerobase
-                                   chimera_end=int(row["chimera_end"])-1)     #python is zerobase
-    except Exception as e:
-        return pd.Series(data=[""]*5, index=['utr5', 'cds', 'utr3', 'region', 'len_error'])
-
-
 def insert_gambiae_region(df) ->DataFrame:
     logger.info(f"enter to insert_gambiae_region")
-    df = pd.concat([df,
-                    df.apply(func=get_wrapper(find_gambiae_region,
-                                              "LEN_5UTR", "LEN_CDS", "LEN_3UTR",
-                                              "chimera_start", "chimera_end"),
-                             axis=1)], axis=1)
+    df["region"] = df.apply(func=get_wrapper(find_gambiae_region,
+                                             "LEN_5UTR", "LEN_CDS", "LEN_3UTR",
+                                             "chimera_start", "chimera_end"),
+                            axis=1)
     return df
 
 
@@ -105,37 +89,47 @@ def find_gambiae_region_sequence(transcript: str, region: str, len_5utr: int, le
     region_key = {'utr5': 0,
                   'cds' : 1,
                   'utr3' :2}
+    if region not in region_key:
+        return "None"
 
     range_list = get_region_ranges(len_5utr, len_cds, len_3utr)
     current_range = range_list[region_key[region]]
     return transcript[current_range.start:current_range.stop]
 
 
-
-def get_gambiae_region_sequence_from_row(row: Series) -> str:
-    try:
-        return find_gambiae_region_sequence(transcript=str(row["seq"]),
-                                   region=str(row["region"]),
-                                   len_5utr=int(row["LEN_5UTR"]),
-                                   len_cds=int(row["LEN_CDS"]),
-                                   len_3utr=int(row["LEN_3UTR"]))
-
-    except Exception as e:
-        return ""
-
-
 def insert_gambiae_region_sequence(df) ->DataFrame:
     logger.info(f"enter to insert_gambiae_region_sequence")
     df["region_sequence"] = df.apply(
         func=get_wrapper(find_gambiae_region_sequence,
-                         "seq", "region", "LEN_5UTR", "LEN_CDS", "LEN_3UTR"),
+                         "mRNA sequence", "region", "LEN_5UTR", "LEN_CDS", "LEN_3UTR"),
         axis=1)
     return df
 
-    #
-    #
-    #                                  get_gambiae_region_sequence_from_row, axis=1)
-    # return df
+
+def human_mapping_merge_by_name(fin: Path, fout: Path):
+    def verify_sequence(seq: str, subseq: str) -> bool:
+        try:
+            return seq.find(subseq) != -1
+        except AttributeError:
+            return False
+
+    in_df: DataFrame = read_csv(fin)
+    in_df["join_key"] = in_df["mRNA ID"].apply(lambda x: "|".join(x.split("_")[0:2]))
+    mRNA_df = concatenate_biomart_df("human")
+
+    in_df = in_df.merge(mRNA_df, how="left",
+                left_on=["region", "join_key"],
+                right_on=["region", "ID"])
+
+    in_df = in_df.rename(columns={"sequence": "region sequence"})
+    in_df = in_df[['key', 'paper name', 'miRNA ID', 'miRNA sequence', 'mRNA ID',
+                   'mRNA_seq_extended', 'region', 'region_sequence', 'mRNA_start', 'mRNA_end_extended']]
+
+
+    in_df["join_ok"] = in_df.apply(func=get_wrapper(verify_sequence, 'region sequence', 'mRNA_seq_extended'), axis=1)
+
+    to_csv(in_df, fout)
+
 
 
 
@@ -147,22 +141,37 @@ def gambiae_run(fin: str, fout:str):
     df: DataFrame = add_gambiae_region_information(Path(fin))
     df = insert_gambiae_region(df)
     df = insert_gambiae_region_sequence(df)
+    df["start"] = df.apply(lambda row: row['chimera_start'] - row['mRNA sequence'].find(row['region_sequence']), axis=1)
+    df["end"] = df.apply(lambda row: row['chimera_end'] - row['mRNA sequence'].find(row['region_sequence']), axis=1)
 
-    logger.info(df["region"].value_counts())
-    # print(df.columns)
-    df = df[['paper name', 'miRNA ID', 'mi_seq', 'Transcript ID', 'site', 'region', 'len_error', 'region_sequence']]
+    cols = [c for c in df.columns if c not in GAMBIAE_INFORMATION_USECOLS]
+    to_csv(df[cols], Path(fout))
 
 
+@click.command()
+@click.argument('fin', type=str)
+@click.argument('fout', type=str)
+def human_mapping_run(fin: str, fout: str):
+    human_mapping_merge_by_name(Path(fin), Path(fout))
+
+
+    # df: DataFrame = add_gambiae_region_information(Path(fin))
+    # df = insert_gambiae_region(df)
+    # df = insert_gambiae_region_sequence(df)
     #
-    #
-    # 'paper name', 'miRNA ID', 'mi_seq', 'chimera_start', 'chimera_end', 'Transcript ID', 'seq', 'site']]
-    df.to_csv(REGION_PATH / source_file)
+    # cols = [c for c in df.columns if c not in GAMBIAE_INFORMATION_USECOLS]
+    # to_csv(df[cols], Path(fout))
 
 
-    #
-    # insert_region_sequence()
+@click.group()
+def cli():
+    pass
+
+
+cli.add_command(gambiae_run)
+cli.add_command(human_mapping_run)
+
 
 
 if __name__ == '__main__':
-    gambiae_run()
-
+    cli()

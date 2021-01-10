@@ -18,7 +18,7 @@ def mirna_seq_insertion(fname: str):
     fout_full_path = MIRNA_SEQ_PATH / fname
 
     df: DataFrame = read_csv(fin_full_path)
-    mirbase_df: DataFrame = pd.read_csv(MIRBASE_FILE, index_col=0,
+    mirbase_df: DataFrame = pd.read_csv(MIRBASE_FILE,
                                         usecols=["miRNA ID", "miRNA sequence"])
     join_df = df.merge(mirbase_df, how="left", left_on="miRNA ID", right_on="miRNA ID")
     to_csv(join_df, fout_full_path)

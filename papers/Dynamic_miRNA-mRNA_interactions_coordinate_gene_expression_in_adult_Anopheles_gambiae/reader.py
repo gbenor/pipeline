@@ -39,6 +39,8 @@ def change_columns_names(df: DataFrame) -> DataFrame:
 def add_meta_data(df: DataFrame) -> DataFrame:
     paper_name = "Dynamic_miRNA-mRNA_interactions_coordinate_gene_expression_in_adult_Anopheles_gambiae"
     df.insert(0, "paper name", paper_name)
+    df.insert(0, "organism", "Anopheles_gambiae")
+    df.insert(0, "paper region", "None")
     df["key"] = df.reset_index().index
 
     return df

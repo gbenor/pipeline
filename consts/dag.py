@@ -1,12 +1,26 @@
 from airflow.utils.dates import days_ago
 from datetime import timedelta
 
+FILE_NAMES = ['dynamic_fly',
+              'cattle',
+              'human_mapping',
+              'darnell_mouse',
+              'darnell_human',
+              'unambiguous_human',
+              'unambiguous_celegans',
+              'unambiguous_mouse',
+              'pairing_beyond']
+
+
 # Dag Names
 MIRBASE_DOWNALOD = "mirbase_downalod"
 FULL_PIPELINE_NAME = "full_pipeline"
 DYNAMIC_FLY_GAMBIAE = "Dynamic_miRNA-mRNA_interactions_coordinate_gene_expression_in_adult_Anopheles_gambiae"
-
-
+HUMAN_MAPPING = "Mapping_the_Human_miRNA_Interactome_by_CLASH_Reveals_Frequent_Noncanonical_Binding"
+CATTLE = "Global_mapping_of_miRNA-target_interactions_in_cattle_Bos_taurus"
+DARNELL = "Darnell_miRNA_targe_chimeras_reveal"
+UNAMBIGUOUS = "Unambiguous_Identification_of_miRNA_Target_Site_Interactions"
+PAIRING_BEYOND = "Pairing_beyond_the_Seed_Supports_MicroRNA_Targeting_Specificity"
 
 
 
