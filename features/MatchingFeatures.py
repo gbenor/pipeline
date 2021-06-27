@@ -4,7 +4,8 @@ from typing import Dict
 
 from pandas import Series
 
-from consts.features import HOT_ENCODING_LEN
+from consts.features import AU, GC, GU, HOT_ENCODING_LEN, MM
+from duplex.utils import mix_inter_bulge_seq
 from features.Features import Features
 
 
@@ -17,24 +18,38 @@ class MatchingFeatures(Features):
 
     def miRNA_match_position(self):  # 20
         mmp_dic = {}
-        pair_list = list(self._duplex.mir_pairing_iterator())
-        for i in range (1, 21):
-            key = 'miRNAMatchPosition_' + str(i)
-            try:
-                pair = pair_list[i-1]
-            except IndexError:
-                pair = '  '
+        # print(list(self._duplex.mir_iterator()))
+        # pair_list = [mir+mix_inter_bulge_seq(self._duplex._mrna_inter[i], self._duplex._mrna_bulge[i])
+        #              for i, mir in self._duplex.mir_iterator()] # bug ?
+        basepair_list = [mir + self._duplex._mrna_inter[i] for i, mir in self._duplex.mir_iterator()]
+        misspair_list = [mir + self._duplex._mrna_bulge[i] for i, mir in self._duplex.mir_iterator()]
 
-            if pair in AU:
-                mmp_dic[key] = 2
-            elif pair in GC:
-                mmp_dic[key] = 1
-            elif pair in GU:
-                mmp_dic[key] = 3
-            elif ' ' in pair:
-                mmp_dic[key] = 5
-            else:
-                mmp_dic[key] = 4
+        # print(basepair_list)
+        # print(misspair_list)
+
+        for i in range (22):
+            key = 'miRNAMatchPosition_' + str(i+1)
+            try:
+                basepair = basepair_list[i] #bug: was i-1
+                misspair = misspair_list[i]
+                # print(f"{i}  {pair}")
+
+                if basepair in AU:
+                    mmp_dic[key] = "AU"
+                elif basepair in GC:
+                    mmp_dic[key] = "GC"
+                elif basepair in GU:
+                    mmp_dic[key] = "GU"
+                elif ' ' in basepair:
+                    if ' ' in misspair:
+                        mmp_dic[key] = "BB"
+                    else:
+                        mmp_dic[key] = "MM"
+                else:
+                    raise Exception(f"It shouldn't be here. i={i}, basepair={basepair} misspair={misspair} "
+                                    f"{self._duplex}")
+            except IndexError:
+                mmp_dic[key] = ""
 
         return mmp_dic
 
@@ -58,9 +73,19 @@ class MatchingFeatures(Features):
                    'miRNAPairingCount_X3p_bulge': 0,
                    'miRNAPairingCount_X3p_bulge_nt': 0}
 
-        i = 0
-        for pair in self._duplex.mir_pairing_iterator():
-            i += 1
+        i = 0 # seed index
+        for k in range(len(self._duplex.mir_bulge)):
+            mir = mix_inter_bulge_seq(self._duplex.mir_bulge[k], self._duplex.mir_inter[k])
+            mrna = mix_inter_bulge_seq(self._duplex.mrna_bulge[k], self._duplex.mrna_inter[k])
+            pair = mir + mrna
+
+
+            if mir != "":
+                i += 1
+
+            if i == 0:
+                continue
+
             if pair in AU:
                 mpc_dic['miRNAPairingCount_Total_AU'] += 1
                 if 0 < i < 9:
