@@ -35,7 +35,7 @@ paper_read = BashOperator(
 
 mirna_seq_insertion = BashOperator(
     task_id='mirna_seq_insertion',
-    bash_command="python " + step_path + "mirna_seq_insertion.py " + file_name,
+    bash_command="python " + step_path + "mirna_seq_insertion.py mirna-seq-insertion " + file_name,
     dag=dynamic_fly_dag,
 )
 

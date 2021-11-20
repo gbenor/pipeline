@@ -38,6 +38,12 @@ def get_unambiguous_graph(organism: str):
         dag=unambiguous_dag,
     )
 
+    mirna_seq_insertion = BashOperator(
+        task_id=f'miRNA_id_fix_{organism}',
+        bash_command="python " + step_path + "mirna_seq_insertion.py mirnaid-fix " + file_name,
+        dag=unambiguous_dag,
+    )
+
 
     # rna_site_insertion = BashOperator(
     #     task_id=f"rna_site_insertion_{organism}",
@@ -49,7 +55,7 @@ def get_unambiguous_graph(organism: str):
     # )
     #
     blast_start, blast_tasks, blast_end = get_blast_graph(unambiguous_dag,
-                                                          (READ_PATH / file_name),
+                                                          (MIRNA_SEQ_PATH / file_name),
                                                           organism)
 
 
@@ -58,7 +64,7 @@ def get_unambiguous_graph(organism: str):
         bash_command=f"python {step_path}concat_blast_result.py concat-blast-result "
                      f"{REGION_PATH}/ "
                      f"{Path(file_name).stem} "
-                     f"{READ_PATH / file_name} "
+                     f"{MIRNA_SEQ_PATH / file_name} "
                      f"{CONCAT_BLAST / file_name} ",
         dag=unambiguous_dag,
     )
@@ -71,50 +77,10 @@ def get_unambiguous_graph(organism: str):
         dag=unambiguous_dag,
     )
 
-    paper_read >> blast_start
+    paper_read >> mirna_seq_insertion >> blast_start
     blast_end >> concat_blast >> normalization
 
 
 for organism in ["celegans", "human", "mouse"]:
     get_unambiguous_graph(organism)
 
-
-# # paper_read >> mirna_seq_insertion >> rna_site_insertion >> blast_start
-#
-# # rna_region_insertion_using_join >> rna_site_insertion >> normalization
-#
-
-
-#
-#
-# #
-# # rna_region_insertion_using_join = BashOperator(
-# #     task_id='rna_region_insertion_using_join',
-# #     bash_command=f"python {step_path}rna_region_insertion.py human-mapping-run "
-# #                  f"{data_step_path}read/{file_name} "
-# #                  f"{data_step_path}region/{file_name} ",
-# #     dag=unambiguous_dag,
-# # )
-# #
-# # rna_site_insertion = BashOperator(
-# #     task_id='rna_site_insertion',
-# #     bash_command=f"python {step_path}rna_site_insertion.py get-site-from-extended-site "
-# #                  f"{data_step_path}region/{file_name} "
-# #                  f"{data_step_path}site/{file_name} ",
-# #     dag=unambiguous_dag,
-# # )
-# #
-# # normalization = BashOperator(
-# #     task_id='normalization',
-# #     bash_command=f"python {step_path}normalization_final_step.py finalize "
-# #                  f"{data_step_path}site/{file_name} "
-# #                  f"{data_step_path}normalization_final/{file_name} ",
-# #     dag=unambiguous_dag,
-# # )
-#
-# paper_read >> mirna_seq_insertion >> blast_start
-# blast_end >> concat_blast >> normalization
-# # paper_read >> mirna_seq_insertion >> rna_site_insertion >> blast_start
-#
-# # rna_region_insertion_using_join >> rna_site_insertion >> normalization
-#

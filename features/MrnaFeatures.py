@@ -6,9 +6,12 @@ from pandas import Series
 
 from consts.features import HOT_ENCODING_LEN
 from features.Features import Features
+from utils.utils import get_subsequence_by_coordinates
 
 
 def seq_composition(s: str, prefix: str) -> Dict[str, float]:
+    if len(s) < 1:
+        return {}
     # monomer
     keys = ["".join(p) for p in product('ACGU', repeat=1)]
     monomer_dict = dict.fromkeys(keys, 0)
@@ -17,6 +20,8 @@ def seq_composition(s: str, prefix: str) -> Dict[str, float]:
         monomer_dict[k]+=1
     monomer = sum(monomer_dict.values())
 
+    if len(s) < 2:
+        return {}
     #dimer
     keys = ["".join(p) for p in product('ACGU', repeat=2)]
     dimer_dict = dict.fromkeys(keys, 0)
@@ -34,18 +39,28 @@ class MrnaFeatures(Features):
     def extract_features(self):
         self._features_dict["dte"] = self.distance_to_end()
         self._features_dict["dts"] = self.distance_to_start()
-
-        mrna_up = self._region_sequence[max(0, self._start - 70):self._start]
-        mrna_down = self._region_sequence[self._end + 1:self._start + 71]
         self._features_dict["target_composition"] = seq_composition(self._site, "MRNA_Target")
-        self._features_dict["flanking_up_composition"] = seq_composition(mrna_up, "MRNA_Up")
-        self._features_dict["flanking_down_composition"] = seq_composition(mrna_down, "MRNA_Down")
+
+
+        try:
+            mrna_up = get_subsequence_by_coordinates(self._region_sequence, self._start - 71, self._start - 1)
+            self._features_dict["flanking_up_composition"] = seq_composition(mrna_up, "MRNA_Up")
+        except ValueError:
+            self._features_dict["flanking_up_composition"] = {}
+
+        try:
+            mrna_down = get_subsequence_by_coordinates(self._region_sequence, self._end + 1, self._end + 71)
+            self._features_dict["flanking_down_composition"] = seq_composition(mrna_down, "MRNA_Down")
+        except ValueError:
+            self._features_dict["flanking_down_composition"] = {}
+
+
 
         self._features_dict["hot_encoding"] = self.pair_hot_encoding(HOT_ENCODING_LEN)
 
     def distance_to_end(self) -> Dict[str, float]:
         mrna_len = len(self._region_sequence)
-        return {'MRNA_Dist_to_end': round(float(mrna_len - self._end) / mrna_len, 4)}
+        return {'MRNA_Dist_to_end': round(float(mrna_len - self._end - 1) / mrna_len, 4)}
 
     def distance_to_start(self) -> Dict[str, float]:
         mrna_len = len(self._region_sequence)

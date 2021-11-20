@@ -20,18 +20,24 @@ class NoDuplexResult(DuplexException):
     pass
 
 
+def padding(s: str, max_len: int) -> str:
+    return s + " " * (max_len - len(s))
 
-class Duplex(ABC):
+
+
+# class Duplex(ABC):
+class Duplex():
     def __init__(self, mrna_bulge: str, mrna_inter: str, mir_inter: str, mir_bulge:str) -> None:
-        self._mrna_bulge = mrna_bulge
-        self._mrna_inter = mrna_inter
-        self._mir_inter = mir_inter
-        self._mir_bulge = mir_bulge
+        max_len = max(map(len, [mrna_bulge, mrna_inter, mir_inter, mir_bulge]))
+        self._mrna_bulge = padding(mrna_bulge, max_len)
+        self._mrna_inter = padding(mrna_inter, max_len)
+        self._mir_inter = padding(mir_inter, max_len)
+        self._mir_bulge = padding(mir_bulge, max_len)
 
         self.__verify()
 
     @classmethod
-    def fromStrings(cls, mrna_bulge: str, mrna_inter: str, mir_inter: str, mir_bulge:str) -> Duplex:
+    def fromStrings(cls, mrna_bulge: str, mrna_inter: str, mir_inter: str, mir_bulge: str) -> Duplex:
         return cls(mrna_bulge, mrna_inter, mir_inter, mir_bulge)
 
     @classmethod
@@ -66,6 +72,10 @@ class Duplex(ABC):
 
     def serialize(self) -> Tuple[str, str, str, str]:
         return self._mrna_bulge, self._mrna_inter, self._mir_inter, self._mir_bulge
+
+    @property
+    def valid(self) -> bool:
+        return self.mrna_bulge != "" and self.mrna_inter != "" and self.mir_inter != "" and self.mir_bulge != ""
 
     @property
     def mrna_bulge(self):

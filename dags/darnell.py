@@ -41,7 +41,7 @@ def get_darnell_graph(organism: str):
 
     mirna_seq_insertion = BashOperator(
         task_id=f"mirna_seq_insertion_{organism}",
-        bash_command="python " + step_path + "mirna_seq_insertion.py " + file_name,
+        bash_command="python " + step_path + "mirna_seq_insertion.py mirna-seq-insertion " + file_name,
         dag=darnell_dag,
     )
 

@@ -38,8 +38,17 @@ paper_read = BashOperator(
 )
 
 
+mirna_seq_insertion = BashOperator(
+    task_id='miRNA_id_fix',
+    bash_command="python " + step_path + "mirna_seq_insertion.py mirnaid-fix " +  file_name,
+    dag=human_mapping_dag,
+)
+
+
+
+
 blast_start, blast_tasks, blast_end = get_blast_graph(human_mapping_dag,
-                                                      (READ_PATH / file_name),
+                                                      (MIRNA_SEQ_PATH / file_name),
                                                       "human")
 
 concat_blast = BashOperator(
@@ -47,7 +56,7 @@ concat_blast = BashOperator(
     bash_command=f"python {step_path}concat_blast_result.py concat-blast-result "
                  f"{REGION_PATH}/ "
                  f"{Path(file_name).stem} "
-                 f"{READ_PATH / file_name} "
+                 f"{MIRNA_SEQ_PATH / file_name} "
                  f"{CONCAT_BLAST / file_name} ",
     dag=human_mapping_dag,
 )
@@ -61,7 +70,7 @@ normalization = BashOperator(
 )
 
 
-paper_read >> blast_start
+paper_read >> mirna_seq_insertion >> blast_start
 blast_end >> concat_blast >> normalization
 # paper_read >> mirna_seq_insertion >> rna_site_insertion >> blast_start
 

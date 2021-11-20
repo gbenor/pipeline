@@ -1,6 +1,6 @@
 from multiprocessing import Pool, Process
 from pathlib import Path
-from typing import Tuple
+from typing import Callable, Tuple
 
 from Bio import SeqIO
 from Bio.Seq import Seq
@@ -15,6 +15,7 @@ from pandas import DataFrame
 from consts.biomart import BIOMART_DATA_PATH
 from utils.logger import logger
 import subprocess
+from more_itertools import chunked
 
 def get_wrapper(func, *columns, **kwargs):
     def wrapper(row):
@@ -34,7 +35,7 @@ def get_wrapper(func, *columns, **kwargs):
 def get_subsequence_by_coordinates(full_sequence: str, start: int, end: int, strand="+",
                                    extra_chars: int = 0) -> str:
     if start == -1:
-        return  f"Error:no subsequence to extract. start={start}, end={end}"
+        raise ValueError(f"Error:no subsequence to extract. start={start}, end={end}")
 
     start = int(start)
     end = int(end)
@@ -44,12 +45,19 @@ def get_subsequence_by_coordinates(full_sequence: str, start: int, end: int, str
     start = max(0, start - 1 - extra_chars) # because python is zero based
     end = min(len(full_sequence), end + extra_chars)
     if (end - start) <= 0:
-        return  f"Error:no subsequence to extract. start={start}, end={end}, full_seq_len={len(full_sequence)}"
+        raise ValueError(f"Error:no subsequence to extract. start={start}, end={end}, full_seq_len={len(full_sequence)}")
     seq = Seq(full_sequence)
     feature_loc: FeatureLocation = FeatureLocation(start, end, strand=strand)
     sub_sequence: Seq = feature_loc.extract(seq)
     return str(sub_sequence)
 
+
+def get_subsequence_by_coordinates_no_exception(full_sequence: str, start: int, end: int, strand="+",
+                                   extra_chars: int = 0) -> str:
+    try:
+        return get_subsequence_by_coordinates(full_sequence, start, end, strand, extra_chars)
+    except ValueError as e:
+        return str(e)
 
 def to_csv(df, path: Path) -> None:
     df.reset_index(inplace=True)
@@ -65,7 +73,10 @@ def read_csv(path: Path) -> DataFrame:
     # Read types first line of csv
     dtypes = pd.read_csv(path, nrows=1).iloc[0].to_dict()
     # Read the rest of the lines with the types from above
-    return pd.read_csv(path, dtype=dtypes, skiprows=[1], index_col=0)
+    d = pd.read_csv(path, dtype=dtypes, skiprows=[1], index_col=0)
+    logger.info(f"read shape: {d.shape}")
+    return d
+
 
 def get_substring_index(full: str, substring:str) -> Tuple[int, int]:
     start = full.find(substring)
@@ -117,6 +128,7 @@ def concatenate_biomart_df(organism: str):
 
 def call_wrapper(cmd: str, cwd: Path):
     # logger.info(f"running {cmd} from {cwd}")
+    # print (cmd.split())
     return subprocess.call(cmd.split(), cwd=cwd.resolve())
 
 
@@ -128,3 +140,18 @@ def DirectorySpecificBashOperator(task_id: str, cmd: str, dag: DAG, cwd: Path) -
         op_kwargs={"cmd": cmd,
                    'cwd': cwd},
         dag=dag)
+
+
+def apply_in_chunks(df: DataFrame, func: Callable, number_of_chunks: int=5):
+    chunk_size = int(len(df) / number_of_chunks)
+    index_chunks = chunked(df.index, chunk_size)
+    return pd.concat([df.loc[ii].apply(func=func, axis=1) for ii in index_chunks], axis=0)
+
+
+def split_file(infile: Path, dir: Path, number_of_chunks: int=5):
+    infile = Path(infile)
+    df: DataFrame = read_csv(infile)
+    chunk_size = int(len(df) / number_of_chunks)
+    index_chunks = chunked(df.index, chunk_size)
+    for i, ii in enumerate(index_chunks):
+        to_csv(df.loc[ii], dir / f"{infile.stem}{i}.csv")

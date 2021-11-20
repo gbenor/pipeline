@@ -26,7 +26,7 @@ def run_blastn(seq: str, db_title: str) -> Series:
     def blast_coverage(start: int, end: int, query: str) -> float:
         return (end - start + 1.0) * 100 / len(query)
 
-    RETURN_COL = ["sequence", "identity", "coverage", "s.start", "s.end"]
+    RETURN_COL = ["Gene_ID", "sequence", "identity", "coverage", "s.start", "s.end"]
     try:
         if len(seq) < MINIMAL_LENGTH_TO_BLAST:
             return pd.Series(index=RETURN_COL)
@@ -82,6 +82,9 @@ def run_blastn(seq: str, db_title: str) -> Series:
         # choose the row with longest utr and add the full mrna
         ###############################
         best = result.iloc[result["sequence length"].idxmax()]
+        best.rename({'ID': "Gene_ID"}, inplace=True)
+
+
         return best[RETURN_COL]
         # return str(best["sequence"].iloc[0]), best["s.start"].iloc[0], best["s.end"].iloc[0]
 

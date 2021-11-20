@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Tuple
+from typing import Dict, Tuple
 
 import click
-from pandas import DataFrame
+from pandas import DataFrame, Series
 import pandas as pd
 
 from consts.global_consts import DUPLEX_DICT
@@ -17,13 +17,22 @@ from utils.utils import get_wrapper, read_csv, to_csv
 
 
 
-def do_duplex(mirna: str, target: str, cls: Duplex) -> Tuple[bool, str, str, str, str]:
+def do_duplex(mirna: str, target: str, cls: Duplex) -> Series:
     # print(f"mirna: {mirna}")
     # print(target)
+
     if pd.isna(mirna) or pd.isna(target):
-        return False, "", "", "", ""
+        return Series({"duplex_valid" : False,
+              "mrna_bulge": "",
+              "mrna_inter": "",
+              "mir_inter": "",
+              "mir_bulge": ""})
     dp = cls.fromChimera(mirna, target)
-    return (True, *dp.serialize())
+    return Series({"duplex_valid": dp.valid,
+              "mrna_bulge": dp.mrna_bulge,
+              "mrna_inter": dp.mrna_inter,
+              "mir_inter": dp.mir_inter,
+              "mir_bulge": dp.mir_bulge})
 
 
 @click.command()
@@ -35,13 +44,13 @@ def duplex(method: str, fin: str, fout: str):
     logger.info(f"{method} do_duplex to {fin}")
     in_df: DataFrame = read_csv(Path(fin))
     # [in_df["miRNA sequence"].notnull() & in_df.site.notnull()]
-    duplex_df = in_df.apply(func=get_wrapper(
+    duplex_df = in_df.query("valid_row").apply(func=get_wrapper(
         do_duplex, "miRNA sequence", "site", cls=duplex_cls),
         axis=1)
-    result = pd.concat([in_df,
-                        pd.DataFrame(duplex_df.tolist(),
-                                     columns=["duplex_valid", "mrna_bulge", "mrna_inter", "mir_inter", "mir_bulge"])],
-                       axis=1)
+
+
+    result = pd.merge(left=in_df, right=duplex_df, left_index=True, right_index=True, how='left')
+
     result["duplex_method"] = method
     to_csv(result, Path(fout))
 

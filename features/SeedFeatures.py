@@ -31,8 +31,8 @@ def startingA(seed: Duplex):
 def mismatch(seed: Duplex, i):
     GU = ['GU', 'UG']
     pair: str = seed.mir_bulge[i] + seed.mrna_bulge[i]
-    if pair in GU:
-        return 0
+    # if pair in GU:
+    #     return 0
     return 1 if len(pair.strip()) == 2 else 0
 
 def bulge(a, b):
@@ -45,6 +45,7 @@ def startingIndex(seed: Duplex):
     for i, (j, p) in enumerate(seed.mir_iterator()):
         if seed.mir_inter[j] != ' ':
             return i + 1
+    return -1
     raise SeedException("not valid seed. No interaction at all")
 
 
@@ -62,7 +63,7 @@ class SeedFeatures(Features):
         seed_features_dict = {}
 
         seed_features_dict['Seed_match_canonical'] = self._duplex.canonical_seed
-        seed_features_dict['Seed_match_noncanonical'] = self._duplex.noncanonical_seed
+        seed_features_dict['Seed_match_noncanonical'] = False if self._duplex.canonical_seed else self._duplex.noncanonical_seed
 
         seed_regions = {"all" : self._seed,
                         "2_7" : self._seed_2_7,

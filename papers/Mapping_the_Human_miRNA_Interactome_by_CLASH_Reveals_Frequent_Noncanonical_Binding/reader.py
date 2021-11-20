@@ -17,6 +17,9 @@ def read() -> DataFrame:
         "1-s2.0-S009286741300439X-mmc1.txt"
     skiprows = 30
     nrows = None
+    # nrows = 100
+
+
     sep = "\t"
     validation_string = "microRNA_name"
     usecols = ['microRNA_name', 'miRNA_seq', 'mRNA_name', 'mRNA_seq_extended',
@@ -35,6 +38,8 @@ def read() -> DataFrame:
     df: DataFrame = pd.read_csv(file_name, skiprows=skiprows, nrows=nrows, usecols=usecols,
                            sep=sep, dtype=dtype)
     assert df.columns[0] == validation_string, "reader validation error"
+    seq_cols = ['miRNA_seq', 'mRNA_seq_extended']
+    df[seq_cols] = df[seq_cols].replace(to_replace='T', value='U', regex=True)
 
     return df
 

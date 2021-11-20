@@ -11,7 +11,7 @@ NORMALIZATION_PATH = ROOT_PATH / "data/pipeline_steps/normalization_final"
 NORMALIZATION_COLUMNS = ['key', 'paper name', 'organism', 'miRNA ID', 'miRNA sequence', 'seed_family',
                          'site',
                          'region', 'region count', 'paper region',
-                         'start', 'end', 'sequence',
+                         'start', 'end', 'sequence', 'Gene_ID',
                          'identity', 'coverage',
                          'valid_row']
 

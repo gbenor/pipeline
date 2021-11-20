@@ -40,6 +40,10 @@ def read(organism: str) -> DataFrame:
 
     df: DataFrame = pd.read_excel(file_name, sheet_name=sheet, nrows=nrows, usecols=usecols,
                                   dtype=dtype, skiprows=skiprows)
+
+    seq_cols = ['miRNA sequence', 'target sequence']
+    df[seq_cols] = df[seq_cols].replace(to_replace='T', value='U', regex=True)
+
     return df
 
 

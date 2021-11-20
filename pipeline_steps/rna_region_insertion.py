@@ -143,8 +143,9 @@ def gambiae_run(fin: str, fout:str):
     df = insert_gambiae_region_sequence(df)
     df["start"] = df.apply(lambda row: row['chimera_start'] - row['mRNA sequence'].find(row['region_sequence']), axis=1)
     df["end"] = df.apply(lambda row: row['chimera_end'] - row['mRNA sequence'].find(row['region_sequence']), axis=1)
-
+    df.rename(columns={"TRANSCRIPT_ID": ",Gene_ID"}, inplace=True)
     cols = [c for c in df.columns if c not in GAMBIAE_INFORMATION_USECOLS]
+
     to_csv(df[cols], Path(fout))
 
 
