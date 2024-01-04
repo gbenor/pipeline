@@ -33,12 +33,8 @@ The project employs a sophisticated approach for data processing and interaction
     - Configure Apache Airflow to interface with the SQL server.
     - Install required Python packages: `pip install -r requirements.txt`.
 
-3. **Configuration**:
-    - Follow the configuration instructions in `config.json` to set up data paths and processing parameters.
-
-4. **Usage**:
+3. **Usage**:
     - Use the Airflow web server to manage and monitor your workflows.
-    - Detailed instructions on running specific pipelines are provided in the `docs` folder.
 
 ## Contribution Guidelines
 
