@@ -36,10 +36,6 @@ The project employs a sophisticated approach for data processing and interaction
 3. **Usage**:
     - Use the Airflow web server to manage and monitor your workflows.
 
-## Contribution Guidelines
-
-Contributors are welcome to propose enhancements, report bugs, and suggest improvements via pull requests and issues. Please refer to the `CONTRIBUTING.md` file for detailed guidelines.
-
 ## License
 
 This project is freely licensed under the MIT License.
