@@ -46,8 +46,8 @@ Contributors are welcome to propose enhancements, report bugs, and suggest impro
 
 ## License
 
-This project is licensed under the MIT License - see the `LICENSE` file for details.
+This project is freely licensed under the MIT License.
 
 ## Acknowledgments
 
-This work is a computational interpretation and implementation of methods described in the referenced paper. We acknowledge the authors and contributors of the original research for their groundbreaking work in the field of miRNA–target interaction analysis.
+This work is a computational interpretation and implementation of methods described in the referenced paper. 
