@@ -28,7 +28,7 @@ The project employs a sophisticated approach for data processing and interaction
     - Additional Python dependencies as listed in `requirements.txt`.
 
 2. **Installation**:
-    - Clone the repository: `git clone [repository URL]`.
+    - Clone the repository: `git clone https://github.com/gbenor/pipeline.git`.
     - Set up an SQL server for Airflow metadata.
     - Configure Apache Airflow to interface with the SQL server.
     - Install required Python packages: `pip install -r requirements.txt`.
